@@ -29,24 +29,7 @@ public class GestionDep {
 
     public static void main(String[] args){
         prepararFichero();
-        System.out.println("INSERTAR DEPARTAMENTO");
-
-        System.out.print("Número de departamento: ");
-        int numDep = Entrada.entero();
-
-        String nombre = pedirTexto("Nombre: ");
-
-        String localidad = pedirTexto("Localidad: ");
-
-        System.out.print("Número de empleados: ");
-        int numEmp = Entrada.entero();
-
-        try {
-            insertaDepartamento(numDep, nombre, localidad, numEmp);
-            consultaDepartamento(numDep);
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            System.out.println("Error: " + e.getMessage());
-        }
+        mostrarMenu();
     }
 
     public static long posicionRegistro(int numDep){
@@ -128,6 +111,41 @@ public class GestionDep {
         return texto;
     }
 
+    private static int pedirNumDep(String mensaje){
+        int numDep;
+
+        do{
+            System.out.print(mensaje);
+            numDep = Entrada.entero();
+
+            if (!numDepValido(numDep)) {
+                System.out.println(
+                        "Error: el número de departamento debe estar entre 1 y 32767."
+                );
+            }
+
+        }while (!numDepValido(numDep));
+
+        return numDep;
+    }
+
+    private static int pedirNumEmp(String mensaje){
+        int numEmp;
+
+        do {
+            System.out.print(mensaje);
+            numEmp = Entrada.entero();
+
+            if (!numEmpValido(numEmp)) {
+                System.out.println(
+                        "Error: el número de empleados debe estar entre 0 y 32767."
+                );
+            }
+        } while(!numEmpValido(numEmp));
+
+        return numEmp;
+    }
+
     public static void escribirRegistroVacio(RandomAccessFile file) throws IOException{
         file.writeShort(0);
         escribirTexto(file, TXT_SIN_USO);
@@ -178,6 +196,93 @@ public class GestionDep {
     private static boolean numEmpValido(int numEmp){
         return numEmp >= 0 && numEmp <= 32767;
     }
+
+    // ============ MENU ==============
+    public static void mostrarMenu() {
+        int opcion;
+        do{
+            System.out.println();
+            System.out.println(" = = = MENU = = = ");
+            System.out.println("1. Comprueba existencia de un departamento");
+            System.out.println("2. Datos de un departamento");
+            System.out.println("3. Actualiza nº de empleados");
+            System.out.println("4. Actualiza nombre y localidad");
+            System.out.println("5. Inserta un departamento");
+            System.out.println("6. Elimina un departamento");
+            //System.out.println("7. Listado de departamentos activos");
+            //System.out.println("8. Posiciones completas del fichero");
+            //System.out.println("9. Estadísticas del fichero");
+            //System.out.println("10. Integridad del fichero");
+            System.out.println("0. Salir");
+            System.out.println(" ");
+            System.out.print("Elige una opción: ");
+            opcion = Entrada.entero();
+            try {
+                switch (opcion){
+                    case 1 -> menuExisteDep();
+                    case 2 -> menuConsultarDep();
+                    case 3 -> menuActualizarNumEmp();
+                    case 4 -> menuActualizarNombreLocalidad();
+                    case 5 -> menuInsertarDep();
+                    case 6 -> menuBorrarDep();
+                    case 0 -> System.out.println("Bye byeee :D");
+                    default -> System.out.println("Error. Elige una opción válda.");
+                }
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+        } while (opcion != 0);
+
+    }
+
+    public static void menuExisteDep(){
+        int numDep = pedirNumDep("Número de departamento: ");
+        if (existeDepartamento(numDep)) {
+            System.out.println("El departamento " + numDep + " existe.");
+        } else {
+            System.out.println("El departamento " + numDep + " no existe.");
+        }
+    }
+
+    public static void menuConsultarDep(){
+        int numDep = pedirNumDep("Número de departamento: ");
+        consultaDepartamento(numDep);
+    }
+
+    public static void menuActualizarNumEmp(){
+        int numDep = pedirNumDep("Número de departamento: ");
+        int nuevoNumDep = pedirNumEmp("Nuevo número de empleados: ");
+        actualizaNumeroEmpleados(numDep, nuevoNumDep);
+    }
+
+    public static void menuActualizarNombreLocalidad(){
+        int numDep = pedirNumDep("Número de departamento: ");
+        String nombre = pedirTexto("Nuevo nombre: ");
+        String localidad = pedirTexto("Nueva localidad: ");
+        actualizaNombreLocalidad(numDep, nombre, localidad);
+    }
+
+    private static void menuInsertarDep(){
+        int numDep = pedirNumDep("Número de departamento: ");
+        String nombre = pedirTexto("Nombre: ");
+        String localidad = pedirTexto("Localidad: ");
+        int numEmp = pedirNumEmp("Número de empleados: ");
+        insertaDepartamento(numDep, nombre, localidad, numEmp);
+    }
+    private static void menuBorrarDep(){
+        int numDep = pedirNumDep("Número de departamento: ");
+
+        //doble confirmación al eliminar departamento por si acaso
+        System.out.print("¿Seguro que quieres eliminar el departamento " + numDep + "? (S/N): ");
+        char respuesta = Entrada.caracter();
+        if (respuesta == 'S' || respuesta == 's') {
+            eliminaDepartamento(numDep);
+        } else {
+            System.out.println("Eliminación cancelada.");
+        }
+    }
+
+
 
     // ======== DEPARTAMENTOS CREACIÓN LECTURA ELIMINACIÓN... =========
 
@@ -444,6 +549,11 @@ public class GestionDep {
             }
         }
     }
+
+    public static void listadoDepartamentos() {
+
+    }
+
 
 
 
