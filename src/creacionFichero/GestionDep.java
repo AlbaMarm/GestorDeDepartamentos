@@ -209,7 +209,7 @@ public class GestionDep {
             System.out.println("4. Actualiza nombre y localidad");
             System.out.println("5. Inserta un departamento");
             System.out.println("6. Elimina un departamento");
-            //System.out.println("7. Listado de departamentos activos");
+            System.out.println("7. Listado de departamentos activos");
             //System.out.println("8. Posiciones completas del fichero");
             //System.out.println("9. Estadísticas del fichero");
             //System.out.println("10. Integridad del fichero");
@@ -225,6 +225,7 @@ public class GestionDep {
                     case 4 -> menuActualizarNombreLocalidad();
                     case 5 -> menuInsertarDep();
                     case 6 -> menuBorrarDep();
+                    case 7 -> listadoDepartamentos();
                     case 0 -> System.out.println("Bye byeee :D");
                     default -> System.out.println("Error. Elige una opción válda.");
                 }
@@ -551,7 +552,50 @@ public class GestionDep {
     }
 
     public static void listadoDepartamentos() {
+        RandomAccessFile file = null;
+        try {
+            file = new RandomAccessFile(f, "r");
 
+            long numPos = file.length() / LONGITUD_REGISTRO;
+            int cont = 0;
+
+            for (int i = 1; i <= numPos; i++){
+                Estado es = estadoPosicion(file, i);
+                if (es == Estado.ACTIVA) {
+                    //inicio del registro
+                    file.seek(posicionRegistro(i));
+                    short id = file.readShort();
+                    String nombre = leerTexto(file);
+                    String localidad = leerTexto(file);
+                    short numEmp = file.readShort();
+                    System.out.println("Departamento: " + id);
+                    System.out.println("Nombre: " + nombre);
+                    System.out.println("Localidad: " + localidad);
+                    System.out.println("Número de empleados: " + numEmp);
+                    System.out.println(" ");
+                    cont++;
+                }
+            }
+
+            if (cont == 0) {
+                System.out.println("No hay departamentos activos.");
+            } else {
+                System.out.println("Se han mostrado " + cont + " departamentos");
+            }
+
+        } catch (FileNotFoundException e) {
+            throw new IllegalStateException("No se ha encontrado el fichero " + f.getName() + ".", e);
+        } catch (IOException e) {
+            throw new IllegalStateException("Error de lectura al generar listado de departamentos.");
+        } finally {
+            if (file != null) {
+                try {
+                    file.close();
+                } catch (IOException e) {
+                    System.out.println("No se ha podido cerrar el fichero.");
+                }
+            }
+        }
     }
 
 
