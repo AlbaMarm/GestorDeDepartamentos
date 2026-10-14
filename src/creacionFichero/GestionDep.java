@@ -34,11 +34,9 @@ public class GestionDep {
         System.out.print("Número de departamento: ");
         int numDep = Entrada.entero();
 
-        System.out.print("Nombre: ");
-        String nombre = Entrada.cadena();
+        String nombre = pedirTexto("Nombre: ");
 
-        System.out.print("Localidad: ");
-        String localidad = Entrada.cadena();
+        String localidad = pedirTexto("Localidad: ");
 
         System.out.print("Número de empleados: ");
         int numEmp = Entrada.entero();
@@ -98,7 +96,7 @@ public class GestionDep {
     // método de leer 15 caracteres desde pos actual y devolver texto sin relleno
     private static String leerTexto(RandomAccessFile file) throws IOException {
         // 1 Creamos un StringBuilder
-        StringBuffer texto = new StringBuffer();
+        StringBuilder texto = new StringBuilder();
 
         // 2 Repetimos file.readChar() 15 veces y añadimos
         for (int i = 0; i < LONGITUD_TEXTO; i++){
