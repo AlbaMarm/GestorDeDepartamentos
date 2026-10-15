@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+
 import org.iesalandalus.programacion.utilidades.Entrada;
 
 public class GestionDep {
@@ -20,23 +21,40 @@ public class GestionDep {
     static final String TXT_SIN_USO = "-".repeat(LONGITUD_TEXTO);
     static final String TXT_BORRADO = "*".repeat(LONGITUD_TEXTO);
 
+    // true si al arrancar aparecen anomalías
+    private static boolean modoDiagnostico = false;
+
     // estado de posiciones del fichero aleatorio
-    enum Estado { FUERA_FICHERO, NUNCA_UTILIZADA, ELIMINADA, ACTIVA, ANOMALA}
+    enum Estado {FUERA_FICHERO, NUNCA_UTILIZADA, ELIMINADA, ACTIVA, ANOMALA}
 
 
     // fichero creado en el directorio seleccionado
     static final File f = new File("departamentos/AleatorioDepart.dat");
 
-    public static void main(String[] args){
+    // si hay anomalías entra en modo diagnóstico, si no, el menu normal
+    public static void main(String[] args) {
         prepararFichero();
+        try {
+            modoDiagnostico = !integridad();
+        } catch (IllegalStateException e) {
+            System.out.println("Error: " + e.getMessage());
+            return;
+        }
+
+        if (modoDiagnostico) {
+            System.out.println("Se han detectado anomalías en tu fichero :(");
+            System.out.println(" -*-*-*- MODO DIAGNÓSTICO -*-*-*- ");
+        }
         mostrarMenu();
     }
 
-    public static long posicionRegistro(int numDep){
+
+    private static long posicionRegistro(int numDep) {
         return (long) (numDep - 1) * LONGITUD_REGISTRO;
     }
 
-    private static void prepararFichero(){
+    // creamos el fichero vacío si no existe, y si existe se conserva
+    private static void prepararFichero() {
         try {
             f.getParentFile().mkdirs();
             if (f.createNewFile()) {
@@ -44,14 +62,14 @@ public class GestionDep {
             } else {
                 System.out.println("Fichero existente, se conserva.");
             }
-        } catch (IOException e){
+        } catch (IOException e) {
             System.out.println("No se ha podido crear el fichero.");
         }
     }
 
     //cierra ficheros, evito repeticiones
-    private static void cerrarFichero(RandomAccessFile file){
-        if(file != null){
+    private static void cerrarFichero(RandomAccessFile file) {
+        if (file != null) {
             try {
                 file.close();
             } catch (IOException e) {
@@ -62,14 +80,14 @@ public class GestionDep {
 
 
     // validamos texto PARA NO TRUNCAR EN SILENCIO (si el texto pasa de 15, se rechaza y se pide de nuevo)
-    private static String validarTexto(String texto){
-        if(texto == null) {
+    private static String validarTexto(String texto) {
+        if (texto == null) {
             return null;
         }
         texto = texto.strip();
 
         // no texto vacío o muy largo
-        if(texto.isEmpty() || texto.length() > LONGITUD_TEXTO){
+        if (texto.isEmpty() || texto.length() > LONGITUD_TEXTO) {
             return null;
         }
 
@@ -77,7 +95,7 @@ public class GestionDep {
     }
 
     // método de escribir texto en posición del puntero (15 caracteres)
-    private static void escribirTexto(RandomAccessFile file, String texto) throws IOException{
+    private static void escribirTexto(RandomAccessFile file, String texto) throws IOException {
         // 1 rellenar espacios a la derecha 15 --> usar String.format
         texto = String.format("%-" + LONGITUD_TEXTO + "s", texto);
         // .format("%-15s", texto) para completar con espacios si es más corto
@@ -93,7 +111,7 @@ public class GestionDep {
         StringBuilder texto = new StringBuilder();
 
         // 2 Repetimos file.readChar() 15 veces y añadimos
-        for (int i = 0; i < LONGITUD_TEXTO; i++){
+        for (int i = 0; i < LONGITUD_TEXTO; i++) {
             texto.append(file.readChar());
         }
 
@@ -102,10 +120,10 @@ public class GestionDep {
     }
 
     // pedir texto por pantalla
-    private static String pedirTexto(String mensaje){
+    private static String pedirTexto(String mensaje) {
         String texto;
 
-        do{
+        do {
             System.out.print(mensaje);
             texto = Entrada.cadena();
 
@@ -117,15 +135,15 @@ public class GestionDep {
                 );
             }
 
-        }while (texto == null);
+        } while (texto == null);
 
         return texto;
     }
 
-    private static int pedirNumDep(String mensaje){
+    private static int pedirNumDep(String mensaje) {
         int numDep;
 
-        do{
+        do {
             System.out.print(mensaje);
             numDep = Entrada.entero();
 
@@ -135,12 +153,12 @@ public class GestionDep {
                 );
             }
 
-        }while (!numDepValido(numDep));
+        } while (!numDepValido(numDep));
 
         return numDep;
     }
 
-    private static int pedirNumEmp(String mensaje){
+    private static int pedirNumEmp(String mensaje) {
         int numEmp;
 
         do {
@@ -152,29 +170,30 @@ public class GestionDep {
                         "Error: el número de empleados debe estar entre 0 y 32767."
                 );
             }
-        } while(!numEmpValido(numEmp));
+        } while (!numEmpValido(numEmp));
 
         return numEmp;
     }
 
-    public static void escribirRegistroVacio(RandomAccessFile file) throws IOException{
+    private static void escribirRegistroVacio(RandomAccessFile file) throws IOException {
         file.writeShort(0);
         escribirTexto(file, TXT_SIN_USO);
         escribirTexto(file, TXT_SIN_USO);
         file.writeShort(0);
     }
 
-    private static Estado estadoPosicion(RandomAccessFile file, int numDep) throws IOException{
+    // estado válido que exige las condiciones de los 4 campos, si no es anómala
+    private static Estado estadoPosicion(RandomAccessFile file, int numDep) throws IOException {
         long pos = posicionRegistro(numDep);
-        if(pos >= file.length()){
+        if (pos >= file.length()) {
             return Estado.FUERA_FICHERO;
         }
 
         //Esto solo vale para los registros activos
         //if(pos/LONGITUD_REGISTRO != file.readChar())
 
-        if(pos + LONGITUD_REGISTRO > file.length()){
-            return  Estado.ANOMALA;
+        if (pos + LONGITUD_REGISTRO > file.length()) {
+            return Estado.ANOMALA;
         }
 
         //comienzo registro y sus campos
@@ -200,36 +219,44 @@ public class GestionDep {
         return Estado.ANOMALA;
     }
 
-    private static boolean numDepValido(int numDep){
+    private static boolean numDepValido(int numDep) {
         return numDep > 0 && numDep <= 32767;
     }
 
-    private static boolean numEmpValido(int numEmp){
+    private static boolean numEmpValido(int numEmp) {
         return numEmp >= 0 && numEmp <= 32767;
     }
 
     // ============ MENU ==============
     public static void mostrarMenu() {
         int opcion;
-        do{
+        do {
             System.out.println();
-            System.out.println(" = = = MENU = = = ");
-            System.out.println("1. Comprueba existencia de un departamento");
-            System.out.println("2. Datos de un departamento");
-            System.out.println("3. Actualiza nº de empleados");
-            System.out.println("4. Actualiza nombre y localidad");
-            System.out.println("5. Inserta un departamento");
-            System.out.println("6. Elimina un departamento");
-            System.out.println("7. Listado de departamentos activos");
+            if (!modoDiagnostico) {
+                System.out.println(" = = = MENU = = = ");
+                System.out.println("1. Comprueba existencia de un departamento");
+                System.out.println("2. Datos de un departamento");
+                System.out.println("3. Actualiza nº de empleados");
+                System.out.println("4. Actualiza nombre y localidad");
+                System.out.println("5. Inserta un departamento");
+                System.out.println("6. Elimina un departamento");
+                System.out.println("7. Listado de departamentos activos");
+            }
             System.out.println("8. Posiciones completas del fichero");
             System.out.println("9. Estadísticas del fichero");
-            //System.out.println("10. Integridad del fichero");
+            System.out.println("10. Integridad del fichero");
             System.out.println("0. Salir");
             System.out.println(" ");
             System.out.print("Elige una opción: ");
             opcion = Entrada.entero();
+
+            if (modoDiagnostico && opcion >= 1 && opcion <= 7) {
+                System.out.println("No se puede realizar esta opción.");
+                continue;
+            }
+
             try {
-                switch (opcion){
+                switch (opcion) {
                     case 1 -> menuExisteDep();
                     case 2 -> menuConsultarDep();
                     case 3 -> menuActualizarNumEmp();
@@ -239,6 +266,7 @@ public class GestionDep {
                     case 7 -> listadoDepartamentos();
                     case 8 -> inspeccionFisica();
                     case 9 -> estadisticas();
+                    case 10 -> integridad();
                     case 0 -> System.out.println("Bye byeee :D");
                     default -> System.out.println("Error. Elige una opción válda.");
                 }
@@ -249,7 +277,7 @@ public class GestionDep {
 
     }
 
-    public static void menuExisteDep(){
+    public static void menuExisteDep() {
         int numDep = pedirNumDep("Número de departamento: ");
         if (existeDepartamento(numDep)) {
             System.out.println("El departamento " + numDep + " existe.");
@@ -258,32 +286,33 @@ public class GestionDep {
         }
     }
 
-    public static void menuConsultarDep(){
+    public static void menuConsultarDep() {
         int numDep = pedirNumDep("Número de departamento: ");
         consultaDepartamento(numDep);
     }
 
-    public static void menuActualizarNumEmp(){
+    public static void menuActualizarNumEmp() {
         int numDep = pedirNumDep("Número de departamento: ");
-        int nuevoNumDep = pedirNumEmp("Nuevo número de empleados: ");
-        actualizaNumeroEmpleados(numDep, nuevoNumDep);
+        int nuevoNumEmp = pedirNumEmp("Nuevo número de empleados: ");
+        actualizaNumeroEmpleados(numDep, nuevoNumEmp);
     }
 
-    public static void menuActualizarNombreLocalidad(){
+    public static void menuActualizarNombreLocalidad() {
         int numDep = pedirNumDep("Número de departamento: ");
         String nombre = pedirTexto("Nuevo nombre: ");
         String localidad = pedirTexto("Nueva localidad: ");
         actualizaNombreLocalidad(numDep, nombre, localidad);
     }
 
-    private static void menuInsertarDep(){
+    private static void menuInsertarDep() {
         int numDep = pedirNumDep("Número de departamento: ");
         String nombre = pedirTexto("Nombre: ");
         String localidad = pedirTexto("Localidad: ");
         int numEmp = pedirNumEmp("Número de empleados: ");
         insertaDepartamento(numDep, nombre, localidad, numEmp);
     }
-    private static void menuBorrarDep(){
+
+    private static void menuBorrarDep() {
         int numDep = pedirNumDep("Número de departamento: ");
 
         //doble confirmación al eliminar departamento por si acaso
@@ -297,12 +326,11 @@ public class GestionDep {
     }
 
 
-
     // ======== DEPARTAMENTOS CREACIÓN LECTURA ELIMINACIÓN... =========
 
-    public static boolean existeDepartamento(int numDep){
+    public static boolean existeDepartamento(int numDep) {
 
-        if(!numDepValido(numDep)){
+        if (!numDepValido(numDep)) {
             throw new IllegalArgumentException("El número de departamento debe estar entre 1 y 32767.");
         }
 
@@ -319,13 +347,13 @@ public class GestionDep {
         }
     }
 
-    public static void insertaDepartamento(int numDep, String nombre, String localidad, int numEmp){
+    public static void insertaDepartamento(int numDep, String nombre, String localidad, int numEmp) {
 
         // validaciones
-        if(!numDepValido(numDep)){
+        if (!numDepValido(numDep)) {
             throw new IllegalArgumentException("El número de departamento debe estar entre 1 y 32767.");
         }
-        if(!numEmpValido(numEmp)){
+        if (!numEmpValido(numEmp)) {
             throw new IllegalArgumentException("El número de empleados debe estar entre 0 y 32767.");
         }
 
@@ -351,7 +379,7 @@ public class GestionDep {
 
             // estados y opciones
             Estado estado = estadoPosicion(file, numDep);
-            if (estado == Estado.ACTIVA){
+            if (estado == Estado.ACTIVA) {
                 System.out.println("El departamento " + numDep + " ya existe.");
                 return;
             }
@@ -384,9 +412,9 @@ public class GestionDep {
         }
     }
 
-    public static void consultaDepartamento(int numDep){
+    public static void consultaDepartamento(int numDep) {
 
-        if(!numDepValido(numDep)){
+        if (!numDepValido(numDep)) {
             throw new IllegalArgumentException("El número de departamento debe estar entre 1 y 32767.");
         }
 
@@ -419,12 +447,12 @@ public class GestionDep {
         }
     }
 
-    public static void actualizaNumeroEmpleados(int numDep, int nuevoNumEmp){
+    public static void actualizaNumeroEmpleados(int numDep, int nuevoNumEmp) {
 
-        if(!numDepValido(numDep)){
+        if (!numDepValido(numDep)) {
             throw new IllegalArgumentException("El número de departamento debe estar entre 1 y 32767.");
         }
-        if(!numEmpValido(nuevoNumEmp)){
+        if (!numEmpValido(nuevoNumEmp)) {
             throw new IllegalArgumentException("El número de empleados debe estar entre 0 y 32767.");
         }
 
@@ -454,9 +482,9 @@ public class GestionDep {
         }
     }
 
-    public static void actualizaNombreLocalidad(int numDep, String nombre, String localidad){
+    public static void actualizaNombreLocalidad(int numDep, String nombre, String localidad) {
 
-        if(!numDepValido(numDep)){
+        if (!numDepValido(numDep)) {
             throw new IllegalArgumentException("El número de departamento debe estar entre 1 y 32767.");
         }
         nombre = validarTexto(nombre);
@@ -483,7 +511,7 @@ public class GestionDep {
             escribirTexto(file, nombre);
             file.seek(posicionRegistro(numDep) + DES_LOCALIDAD);
             escribirTexto(file, localidad);
-            System.out.println("Nuevo nombre: " + nombre + " y nueva localidad: "+ localidad);
+            System.out.println("Nuevo nombre: " + nombre + " y nueva localidad: " + localidad);
 
         } catch (FileNotFoundException e) {
             throw new IllegalStateException("No se ha encontrado el fichero " + f.getName() + ".", e);
@@ -494,9 +522,9 @@ public class GestionDep {
         }
     }
 
-    public static void eliminaDepartamento(int numDep){
+    public static void eliminaDepartamento(int numDep) {
 
-        if(!numDepValido(numDep)){
+        if (!numDepValido(numDep)) {
             throw new IllegalArgumentException("El número de departamento debe estar entre 1 y 32767.");
         }
 
@@ -538,7 +566,7 @@ public class GestionDep {
             long numPos = file.length() / LONGITUD_REGISTRO;
             int cont = 0;
 
-            for (int i = 1; i <= numPos; i++){
+            for (int i = 1; i <= numPos; i++) {
                 Estado es = estadoPosicion(file, i);
                 if (es == Estado.ACTIVA) {
                     //inicio del registro
@@ -565,13 +593,13 @@ public class GestionDep {
         } catch (FileNotFoundException e) {
             throw new IllegalStateException("No se ha encontrado el fichero " + f.getName() + ".", e);
         } catch (IOException e) {
-            throw new IllegalStateException("Error de lectura al generar listado de departamentos.");
+            throw new IllegalStateException("Error de lectura al generar listado de departamentos.", e);
         } finally {
             cerrarFichero(file);
         }
     }
 
-    public static void inspeccionFisica(){
+    public static void inspeccionFisica() {
         RandomAccessFile file = null;
         try {
             file = new RandomAccessFile(f, "r");
@@ -579,7 +607,7 @@ public class GestionDep {
             long numPos = file.length() / LONGITUD_REGISTRO;
             int cont = 0;
 
-            for (int i = 1; i <= numPos; i++){
+            for (int i = 1; i <= numPos; i++) {
                 //mueve el puntero
                 Estado estado = estadoPosicion(file, i);
                 file.seek(posicionRegistro(i));
@@ -605,13 +633,13 @@ public class GestionDep {
         } catch (FileNotFoundException e) {
             throw new IllegalStateException("No se ha encontrado el fichero " + f.getName() + ".", e);
         } catch (IOException e) {
-            throw new IllegalStateException("Error de lectura al inspeccionar fichero.");
+            throw new IllegalStateException("Error de lectura al inspeccionar fichero.", e);
         } finally {
             cerrarFichero(file);
         }
     }
 
-    public static void estadisticas(){
+    public static void estadisticas() {
         RandomAccessFile file = null;
         try {
             file = new RandomAccessFile(f, "r");
@@ -622,17 +650,18 @@ public class GestionDep {
             int sinUso = 0;
             long sumaEmp = 0;
 
-            for(int i = 1; i <= numPos; i++) {
+            for (int i = 1; i <= numPos; i++) {
                 Estado estado = estadoPosicion(file, i);
-                switch (estado){
+                switch (estado) {
                     case ACTIVA -> {
                         activos++;
                         file.seek(posicionRegistro(i) + DES_NUM_EMP);
-                        sumaEmp+= file.readShort();
+                        sumaEmp += file.readShort();
                     }
                     case ELIMINADA -> eliminadas++;
                     case NUNCA_UTILIZADA -> sinUso++;
-                    default -> {}
+                    default -> {
+                    }
                 }
             }
 
@@ -652,15 +681,91 @@ public class GestionDep {
         } catch (FileNotFoundException e) {
             throw new IllegalStateException("No se ha encontrado el fichero " + f.getName() + ".", e);
         } catch (IOException e) {
-            throw new IllegalStateException("Error de lectura al calcular estadísticas de fichero.");
+            throw new IllegalStateException("Error de lectura al calcular estadísticas de fichero.", e);
         } finally {
             cerrarFichero(file);
         }
     }
 
+    // este método no debe modificar el fichero
+    public static boolean integridad() {
+        boolean bien = true;
+        RandomAccessFile file = null;
+        try {
+            file = new RandomAccessFile(f, "r");
+            long longReg = file.length();
+            if (longReg % LONGITUD_REGISTRO != 0) {
+                bien = false;
+                System.out.println("Error: El fichero contiene un registro incompleto a partir del byte: " + (longReg - (longReg % LONGITUD_REGISTRO)));
+            }
+
+            // estas si están completas
+            long numPos = longReg / LONGITUD_REGISTRO;
+            for (int i = 1; i <= numPos; i++) {
+                long posRegInicial = posicionRegistro(i);
+                file.seek(posicionRegistro(i));
+                short id = file.readShort();
+                String nombre = leerTexto(file);
+                String localidad = leerTexto(file);
+                short numEmp = file.readShort();
+
+                if (id < -1) {
+                    // cuando id negativo pero no -1
+                    bien = false;
+                    System.out.println("Error: identificador negativo distinto de -1 en la posición " + i + " (bytes: " + posRegInicial + ").");
+                }
+                if (id > 0 && id != i) {
+                    bien = false;
+                    System.out.println("Error: No corresponde a su posición de registro en: " + i + " (bytes: " + posRegInicial + ").");
+                }
+                if (id == i) {
+                    // dep activo con tres comprobaciones
+                    if (numEmp < 0) {
+                        bien = false;
+                        System.out.println("Error: Empleados negativos en el registro: " + i + " (bytes: " + posRegInicial + ").");
+                    }
+                    if (nombre.isEmpty() || nombre.isBlank()) {
+                        bien = false;
+                        System.out.println("Error: Nombre vacío en el registro: " + i + " (bytes: " + posRegInicial + ").");
+                    }
+                    if (localidad.isEmpty() || localidad.isBlank()) {
+                        bien = false;
+                        System.out.println("Error: Localidad vacía en el registro: " + i + " (bytes: " + posRegInicial + ").");
+                    }
+                }
+
+                if (id == 0) {
+                    // comprobamos que una posición no utilizada tiene sus marcas correspondientes
+                    if (!nombre.equals(TXT_SIN_USO) || !localidad.equals(TXT_SIN_USO) || numEmp != 0) {
+                        bien = false;
+                        System.out.println("Error: Posición nunca utilizada con formato incorrecto en: " + i + " (bytes: " + posRegInicial + ").");
+                    }
+
+                }
+
+                if (id == -1) {
+                    // comprobamos lo mismo de las marcas pero con borrado
+                    if (!nombre.equals(TXT_BORRADO) || !localidad.equals(TXT_BORRADO) || numEmp != -1) {
+                        bien = false;
+                        System.out.println("Error: Registro eliminado sin las marcas de borrado en: " + i + " (bytes: " + posRegInicial + ").");
+                    }
+                }
 
 
+            }
+            if (bien) {
+                System.out.println("No se ha detectado ninguna anomalía, todo correcto.");
+            }
 
+        } catch (FileNotFoundException e) {
+            throw new IllegalStateException("No se ha encontrado el fichero " + f.getName() + ".", e);
+        } catch (IOException e) {
+            throw new IllegalStateException("Error de lectura al comprobar la integridad.", e);
+        } finally {
+            cerrarFichero(file);
+        }
+        return bien;
+    }
 
 
 }
