@@ -322,11 +322,13 @@ public class GestionDep {
     public static void insertaDepartamento(int numDep, String nombre, String localidad, int numEmp){
 
         // validaciones
-        if (!numDepValido(numDep) || !numEmpValido(numEmp)) {
-            throw new IllegalArgumentException(
-                    "El número de departamento o de empleados no es válido."
-            );
+        if(!numDepValido(numDep)){
+            throw new IllegalArgumentException("El número de departamento debe estar entre 1 y 32767.");
         }
+        if(!numEmpValido(numEmp)){
+            throw new IllegalArgumentException("El número de empleados debe estar entre 0 y 32767.");
+        }
+
         nombre = validarTexto(nombre);
         localidad = validarTexto(localidad);
         if (nombre == null || localidad == null) {
@@ -634,12 +636,17 @@ public class GestionDep {
                 }
             }
 
-            int hueco = eliminadas + sinUso;
-            if(hueco == 0){
-                System.out.println("No hay posiciones eliminadas ni sin uso");
-            }else{
-                double porcentaje = activos * 100.0 / hueco;
-                String.format("%.2f", porcentaje);
+            System.out.println("Longitud del fichero: " + longFile + " bytes");
+            System.out.println("Departamentos activos: " + activos);
+            System.out.println("Posiciones eliminadas: " + eliminadas);
+            System.out.println("Posiciones nunca utilizadas: " + sinUso);
+            System.out.println("Suma de empleados (departamentos activos): " + sumaEmp);
+
+            int huecos = eliminadas + sinUso;
+            if (huecos == 0) {
+                System.out.println("Porcentaje de ocupación: no calculable (no hay posiciones eliminadas ni sin uso).");
+            } else {
+                System.out.printf("Porcentaje de ocupación: %.2f %%%n", activos * 100.0 / huecos);
             }
 
         } catch (FileNotFoundException e) {
