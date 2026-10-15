@@ -222,7 +222,7 @@ public class GestionDep {
             System.out.println("6. Elimina un departamento");
             System.out.println("7. Listado de departamentos activos");
             System.out.println("8. Posiciones completas del fichero");
-            //System.out.println("9. Estadísticas del fichero");
+            System.out.println("9. Estadísticas del fichero");
             //System.out.println("10. Integridad del fichero");
             System.out.println("0. Salir");
             System.out.println(" ");
@@ -238,6 +238,7 @@ public class GestionDep {
                     case 6 -> menuBorrarDep();
                     case 7 -> listadoDepartamentos();
                     case 8 -> inspeccionFisica();
+                    case 9 -> estadisticas();
                     case 0 -> System.out.println("Bye byeee :D");
                     default -> System.out.println("Error. Elige una opción válda.");
                 }
@@ -603,6 +604,48 @@ public class GestionDep {
             throw new IllegalStateException("No se ha encontrado el fichero " + f.getName() + ".", e);
         } catch (IOException e) {
             throw new IllegalStateException("Error de lectura al inspeccionar fichero.");
+        } finally {
+            cerrarFichero(file);
+        }
+    }
+
+    public static void estadisticas(){
+        RandomAccessFile file = null;
+        try {
+            file = new RandomAccessFile(f, "r");
+            long longFile = file.length();
+            long numPos = longFile / LONGITUD_REGISTRO;
+            int activos = 0;
+            int eliminadas = 0;
+            int sinUso = 0;
+            long sumaEmp = 0;
+
+            for(int i = 1; i <= numPos; i++) {
+                Estado estado = estadoPosicion(file, i);
+                switch (estado){
+                    case ACTIVA -> {
+                        activos++;
+                        file.seek(posicionRegistro(i) + DES_NUM_EMP);
+                        sumaEmp+= file.readShort();
+                    }
+                    case ELIMINADA -> eliminadas++;
+                    case NUNCA_UTILIZADA -> sinUso++;
+                    default -> {}
+                }
+            }
+
+            int hueco = eliminadas + sinUso;
+            if(hueco == 0){
+                System.out.println("No hay posiciones eliminadas ni sin uso");
+            }else{
+                double porcentaje = activos * 100.0 / hueco;
+                String.format("%.2f", porcentaje);
+            }
+
+        } catch (FileNotFoundException e) {
+            throw new IllegalStateException("No se ha encontrado el fichero " + f.getName() + ".", e);
+        } catch (IOException e) {
+            throw new IllegalStateException("Error de lectura al calcular estadísticas de fichero.");
         } finally {
             cerrarFichero(file);
         }
