@@ -49,6 +49,17 @@ public class GestionDep {
         }
     }
 
+    //cierra ficheros, evito repeticiones
+    private static void cerrarFichero(RandomAccessFile file){
+        if(file != null){
+            try {
+                file.close();
+            } catch (IOException e) {
+                System.out.println("No se ha podido cerrar el fichero " + f.getName() + ".");
+            }
+        }
+    }
+
 
     // validamos texto PARA NO TRUNCAR EN SILENCIO (si el texto pasa de 15, se rechaza y se pide de nuevo)
     private static String validarTexto(String texto){
@@ -210,7 +221,7 @@ public class GestionDep {
             System.out.println("5. Inserta un departamento");
             System.out.println("6. Elimina un departamento");
             System.out.println("7. Listado de departamentos activos");
-            //System.out.println("8. Posiciones completas del fichero");
+            System.out.println("8. Posiciones completas del fichero");
             //System.out.println("9. Estadísticas del fichero");
             //System.out.println("10. Integridad del fichero");
             System.out.println("0. Salir");
@@ -226,6 +237,7 @@ public class GestionDep {
                     case 5 -> menuInsertarDep();
                     case 6 -> menuBorrarDep();
                     case 7 -> listadoDepartamentos();
+                    case 8 -> inspeccionFisica();
                     case 0 -> System.out.println("Bye byeee :D");
                     default -> System.out.println("Error. Elige una opción válda.");
                 }
@@ -302,13 +314,7 @@ public class GestionDep {
         } catch (IOException e) {
             throw new IllegalStateException("Error de lectura en el fichero " + f.getName() + ".", e);
         } finally {
-            if (file != null) {
-                try {
-                    file.close();
-                } catch (IOException e) {
-                    System.out.println("No se ha podido cerrar el fichero.");
-                }
-            }
+            cerrarFichero(file);
         }
     }
 
@@ -371,13 +377,7 @@ public class GestionDep {
         } catch (IOException e) {
             throw new IllegalStateException("Error de acceso al fichero " + f.getName() + ".", e);
         } finally {
-            if (file != null) {
-                try {
-                    file.close();
-                } catch (IOException e) {
-                    System.out.println("No se ha podido cerrar el fichero.");
-                }
-            }
+            cerrarFichero(file);
         }
     }
 
@@ -412,13 +412,7 @@ public class GestionDep {
         } catch (IOException e) {
             throw new IllegalStateException("Error de acceso al fichero " + f.getName() + ".", e);
         } finally {
-            if (file != null) {
-                try {
-                    file.close();
-                } catch (IOException e) {
-                    System.out.println("No se ha podido cerrar el fichero.");
-                }
-            }
+            cerrarFichero(file);
         }
     }
 
@@ -453,13 +447,7 @@ public class GestionDep {
         } catch (IOException e) {
             throw new IllegalStateException("Error de acceso al fichero " + f.getName() + ".", e);
         } finally {
-            if (file != null) {
-                try {
-                    file.close();
-                } catch (IOException e) {
-                    System.out.println("No se ha podido cerrar el fichero.");
-                }
-            }
+            cerrarFichero(file);
         }
     }
 
@@ -499,13 +487,7 @@ public class GestionDep {
         } catch (IOException e) {
             throw new IllegalStateException("Error de acceso al fichero " + f.getName() + ".", e);
         } finally {
-            if (file != null) {
-                try {
-                    file.close();
-                } catch (IOException e) {
-                    System.out.println("No se ha podido cerrar el fichero.");
-                }
-            }
+            cerrarFichero(file);
         }
     }
 
@@ -541,13 +523,7 @@ public class GestionDep {
         } catch (IOException e) {
             throw new IllegalStateException("Error de acceso al fichero " + f.getName() + ".", e);
         } finally {
-            if (file != null) {
-                try {
-                    file.close();
-                } catch (IOException e) {
-                    System.out.println("No se ha podido cerrar el fichero.");
-                }
-            }
+            cerrarFichero(file);
         }
     }
 
@@ -588,15 +564,51 @@ public class GestionDep {
         } catch (IOException e) {
             throw new IllegalStateException("Error de lectura al generar listado de departamentos.");
         } finally {
-            if (file != null) {
-                try {
-                    file.close();
-                } catch (IOException e) {
-                    System.out.println("No se ha podido cerrar el fichero.");
-                }
-            }
+            cerrarFichero(file);
         }
     }
+
+    public static void inspeccionFisica(){
+        RandomAccessFile file = null;
+        try {
+            file = new RandomAccessFile(f, "r");
+
+            long numPos = file.length() / LONGITUD_REGISTRO;
+            int cont = 0;
+
+            for (int i = 1; i <= numPos; i++){
+                //mueve el puntero
+                Estado estado = estadoPosicion(file, i);
+                file.seek(posicionRegistro(i));
+                short id_almacenado = file.readShort();
+
+                System.out.println("Departamento y posición: " + i);
+                System.out.println("Desplazamiento inicial: " + posicionRegistro(i) + " bytes");
+                System.out.println("Id esperado: " + i);
+                System.out.println("Id posición: " + id_almacenado);
+                System.out.println("Estado: " + estado);
+
+                System.out.println(" ");
+                cont++;
+
+            }
+
+            if (cont == 0) {
+                System.out.println("No hay posiciones.");
+            } else {
+                System.out.println("Se han mostrado " + cont + " posiciones");
+            }
+
+        } catch (FileNotFoundException e) {
+            throw new IllegalStateException("No se ha encontrado el fichero " + f.getName() + ".", e);
+        } catch (IOException e) {
+            throw new IllegalStateException("Error de lectura al inspeccionar fichero.");
+        } finally {
+            cerrarFichero(file);
+        }
+    }
+
+
 
 
 
