@@ -680,7 +680,7 @@ public class GestionDep {
                 System.out.println("Porcentaje de ocupación: no calculable (no hay posiciones eliminadas ni sin uso).");
             } else {
                 // formato para el porcentaje
-                System.out.printf("Porcentaje de ocupación: %.2f %%%n", activos * 100.0 / (activos + huecos));
+                System.out.printf("Porcentaje de ocupación: %.2f %%%n", activos * 100.0 / huecos);
             }
 
         } catch (FileNotFoundException e) {
