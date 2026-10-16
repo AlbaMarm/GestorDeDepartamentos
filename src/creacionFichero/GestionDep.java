@@ -9,6 +9,7 @@ import org.iesalandalus.programacion.utilidades.Entrada;
 
 public class GestionDep {
 
+    // cada registro ocupa 64 bytes, 2 id 30 nombre 30 localidad y 2 n.º de empleados.
     static final int LONGITUD_REGISTRO = 64;
     static final int LONGITUD_TEXTO = 15;
 
@@ -286,6 +287,7 @@ public class GestionDep {
         }
     }
 
+    // entradas para opciones del menu
     public static void menuConsultarDep() {
         int numDep = pedirNumDep("Número de departamento: ");
         consultaDepartamento(numDep);
@@ -347,6 +349,7 @@ public class GestionDep {
         }
     }
 
+    // si departamento en fin del fichero las demás son nunca utilizadas
     public static void insertaDepartamento(int numDep, String nombre, String localidad, int numEmp) {
 
         // validaciones
@@ -522,6 +525,7 @@ public class GestionDep {
         }
     }
 
+    // escribimos marcas de borrado, pero conservamos los bytes para posible reutilización
     public static void eliminaDepartamento(int numDep) {
 
         if (!numDepValido(numDep)) {
@@ -675,7 +679,8 @@ public class GestionDep {
             if (huecos == 0) {
                 System.out.println("Porcentaje de ocupación: no calculable (no hay posiciones eliminadas ni sin uso).");
             } else {
-                System.out.printf("Porcentaje de ocupación: %.2f %%%n", activos * 100.0 / huecos);
+                // formato para el porcentaje
+                System.out.printf("Porcentaje de ocupación: %.2f %%%n", activos * 100.0 / (activos + huecos));
             }
 
         } catch (FileNotFoundException e) {
@@ -687,7 +692,7 @@ public class GestionDep {
         }
     }
 
-    // este método no debe modificar el fichero
+    // este método no debe modificar el fichero, informa anomalías detectadas pero no arregla
     public static boolean integridad() {
         boolean bien = true;
         RandomAccessFile file = null;
